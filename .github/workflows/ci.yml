@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  SOURCE_DATE_EPOCH: "0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - run: uv sync --locked
+      - run: uv run python -m pytest -q
+      - run: uv run python -m python_csharp_rpc_bridge.build_tools.build
+      - name: Verify generated files are up to date
+        run: git diff --exit-code -- modules/sample/generated
+      - run: dotnet build src/csharp/ModulePlatform.csproj -c Release -o modules/sample/out/net48/release -p:PyfModuleName=sample -p:PyfBackendDir=${{ github.workspace }}/modules/sample/out/net48/release
+      - run: cp modules/sample/generated/python/*.py modules/sample/out/net48/release/

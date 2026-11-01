@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <PyfModuleName Condition="'$(PyfModuleName)' == ''">ModulePlatform</PyfModuleName>
+    <AssemblyName>$(PyfModuleName)</AssemblyName>
+    <RootNamespace>ModulePlatform</RootNamespace>
+    <TargetFramework>net48</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PyfGeneratedDir Condition="'$(PyfGeneratedDir)' == ''">$(MSBuildThisFileDirectory)..\..\modules\sample\generated\csharp</PyfGeneratedDir>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PyfBackendDir)' != ''">
+    <AssemblyMetadata Include="PyfBackendDir" Value="$(PyfBackendDir)" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(PyfGeneratedDir)\**\*.cs"
+             Link="generated\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

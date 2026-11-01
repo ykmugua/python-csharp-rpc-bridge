@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+bin/
+obj/
+
+# Module build artifacts
+/modules/*/out/
+/modules/*/generated/python/*.exe
+/modules/*/generated/python/*.build/
+/modules/*/generated/python/*.dist/
+/toolchain/zig-*/
+
+# Virtual environments
+.venv

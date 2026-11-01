@@ -51,6 +51,14 @@ def write_meta(module: str, exe_name: str, scanned: dict, out_dir: Path) -> dict
                     }
                     for p in c["init_params"]
                 ],
+                "fields": [
+                    {
+                        "name": field["name"],
+                        "annotation": field["annotation"],
+                        "writable": field["writable"],
+                    }
+                    for field in c.get("fields", [])
+                ],
                 "methods": [
                     {
                         "qualname": f"{c['name']}.{m['name']}",

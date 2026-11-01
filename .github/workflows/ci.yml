@@ -25,4 +25,4 @@ jobs:
       - name: Verify generated files are up to date
         run: git diff --exit-code -- modules/sample/generated
       - run: dotnet build src/csharp/ModulePlatform.csproj -c Release -o modules/sample/out/net48/release -p:PyfModuleName=sample -p:PyfBackendDir=${{ github.workspace }}/modules/sample/out/net48/release
-      - run: cp modules/sample/generated/python/*.py modules/sample/out/net48/release/
+      - run: cp -r modules/sample/generated/python/. modules/sample/out/net48/release/

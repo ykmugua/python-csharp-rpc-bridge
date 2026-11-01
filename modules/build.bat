@@ -84,9 +84,7 @@ echo Building .NET Framework 4.8 DLL: %MODULE_NAME%.dll
 dotnet build src\csharp\ModulePlatform.csproj -c %BUILD_CONFIG% -o "%OUTPUT_DIR%" -p:PyfModuleName="%MODULE_NAME%" -p:PyfGeneratedDir="%MODULE_ROOT%\generated\csharp" -p:PyfBackendDir="%OUTPUT_DIR%"
 if errorlevel 1 goto failed
 
-copy /Y "%MODULE_ROOT%\generated\python\%MODULE_NAME%_rpc_server.py" "%OUTPUT_DIR%\" >nul
-if errorlevel 1 goto failed
-copy /Y "%MODULE_ROOT%\generated\python\%MODULE_NAME%.py" "%OUTPUT_DIR%\" >nul
+xcopy /Y /I /S "%MODULE_ROOT%\generated\python\*.py" "%OUTPUT_DIR%\" >nul
 if errorlevel 1 goto failed
 if /I "%BUILD_CONFIG%"=="Release" (
     copy /Y "%MODULE_ROOT%\generated\python\%MODULE_NAME%_rpc.exe" "%OUTPUT_DIR%\" >nul

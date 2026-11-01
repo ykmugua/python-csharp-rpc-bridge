@@ -10,7 +10,7 @@ namespace ModulePlatform
     public static class SampleRuntime
     {
         /// <summary>Gets the source hash used to verify the matching Python backend.</summary>
-        public const string SourceHash = "11bbb46f421c82bda737d6d53d6de756a3809a4f61a884c1faf94d529aa6892b";
+        public const string SourceHash = "6d872e91de24a625ce417c1b7bd6633612bdd5da2aee8466caa87870ccd69ac9";
 
         private static StdioRpcClient? _client;
         private static bool _started;

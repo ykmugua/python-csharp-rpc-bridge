@@ -49,9 +49,21 @@ def test_generated_rpc_and_facade_cover_the_sample(tmp_path):
     assert "public static class SampleFunctions" in functions
     assert "Add_pyf(int a, int b)" in functions
     assert "SampleRuntime.Client.Invoke<int>(\"add\"" in functions
+    assert "Delete_item_pyf(int[] values, int index)" in functions
+    assert "JsonSerializer.SerializeToNode(values)" in functions
+    assert "Invoke<int[]>(\"delete_item\"" in functions
     assert "/// <summary>" in functions
     assert "Return the sum of two integers." in functions
     assert "public SampleFunctions(" not in functions
+    processor = (generated_dir / "TextProcessor.cs").read_text(encoding="utf-8")
+    assert "public string Lang\n        {" in processor
+    assert "public bool Verbose\n        {" in processor
+    assert '["member_name"] = "lang", ["value"] = JsonValue.Create(value)' in processor
+    assert '["member_name"] = "verbose", ["value"] = JsonValue.Create(value)' in processor
+    assert "public int Calls" in processor
+    assert '["member_name"] = "calls", ["value"] = JsonValue.Create(value)' in processor
+    assert '"__get_member"' in processor
+    assert '"__set_member"' in processor
     runtime = (generated_dir / "SampleRuntime.cs").read_text(encoding="utf-8")
     assert "public static class SampleRuntime" in runtime
     assert "internal static StdioRpcClient Client" in runtime
@@ -132,3 +144,80 @@ def test_standalone_build_generates_python_and_csharp_under_output_root(tmp_path
     assert "Add_pyf(int a, int b)" in functions
     runtime = (csharp_output / "OrderServiceRuntime.cs").read_text(encoding="utf-8")
     assert 'CreateClient("order_service_rpc.exe", "order_service_rpc_server.py")' in runtime
+
+
+def test_build_copies_recursive_local_imports(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    (source_dir / "business.py").write_text(
+        "from helper import helper\n\n"
+        "def run(value: int) -> int:\n"
+        "    return helper(value)\n",
+        encoding="utf-8",
+    )
+    (source_dir / "helper.py").write_text(
+        "from more import increment\n\n"
+        "def helper(value):\n"
+        "    return increment(value)\n",
+        encoding="utf-8",
+    )
+    (source_dir / "more.py").write_text(
+        "def increment(value):\n"
+        "    return value + 1\n",
+        encoding="utf-8",
+    )
+    output_root = tmp_path / "output"
+    python_output = output_root / "generated" / "python"
+
+    build_module(
+        "business",
+        source_dir / "business.py",
+        python_output,
+        output_root / "generated" / "csharp",
+    )
+
+    assert (python_output / "helper.py").read_text(encoding="utf-8") == (
+        source_dir / "helper.py"
+    ).read_text(encoding="utf-8")
+    assert (python_output / "more.py").is_file()
+
+
+def test_generated_facades_map_typed_collections_for_functions_and_methods(tmp_path):
+    source = tmp_path / "collections.py"
+    source.write_text(
+        "def echo_numbers(values: list[float]) -> list[float]:\n"
+        "    return values\n\n"
+        "def echo_names(values: list[str]) -> list[str]:\n"
+        "    return values\n\n"
+        "def echo_flags(values: list[bool]) -> list[bool]:\n"
+        "    return values\n\n"
+        "def echo_records(values: list[dict[str, int]]) -> list[dict[str, int]]:\n"
+        "    return values\n\n"
+        "class CollectionStore:\n"
+        "    def replace(self, values: list[str]) -> list[str]:\n"
+        "        \"\"\"Write the stored string values.\"\"\"\n"
+        "        return values\n",
+        encoding="utf-8",
+    )
+    generated_dir = tmp_path / "csharp"
+    build_module(
+        "collections",
+        source,
+        tmp_path / "python",
+        generated_dir,
+    )
+
+    functions = (generated_dir / "CollectionsFunctions.cs").read_text(encoding="utf-8")
+    assert "Echo_numbers_pyf(double[] values)" in functions
+    assert "Echo_names_pyf(string[] values)" in functions
+    assert "Echo_flags_pyf(bool[] values)" in functions
+    assert "Echo_records_pyf(JsonObject[] values)" in functions
+    assert "JsonSerializer.SerializeToNode(values)" in functions
+    assert "Invoke<double[]>(\"echo_numbers\"" in functions
+    assert "Invoke<string[]>(\"echo_names\"" in functions
+    assert "Invoke<bool[]>(\"echo_flags\"" in functions
+    assert "Invoke<JsonObject[]>(\"echo_records\"" in functions
+
+    store = (generated_dir / "CollectionStore.cs").read_text(encoding="utf-8")
+    assert "public string[] Replace_pyf(string[] values)" in store
+    assert "JsonSerializer.SerializeToNode(values)" in store

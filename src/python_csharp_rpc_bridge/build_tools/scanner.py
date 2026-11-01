@@ -48,9 +48,75 @@ def _check_name(name: str, where: str) -> None:
 def _check_ann(ann: str | None, where: str) -> str:
     if ann is None:
         raise ScanError(f"{where}: missing type annotation")
-    if ann not in ALLOWED:
-        raise ScanError(f"{where}: unsupported annotation {ann!r}; allowed: {sorted(ALLOWED)}")
-    return ann
+    if ann in ALLOWED:
+        return ann
+
+    try:
+        node = ast.parse(ann, mode="eval").body
+    except SyntaxError:
+        node = None
+    if _is_supported_generic(node):
+        return ann
+
+    allowed = f"{sorted(ALLOWED)} and list[<supported type>] / dict[str, <supported type>]"
+    raise ScanError(f"{where}: unsupported annotation {ann!r}; allowed: {allowed}")
+
+
+def _is_supported_generic(node: ast.expr | None) -> bool:
+    if isinstance(node, ast.Name):
+        return node.id in BASE_TYPES | {"dict", "list"}
+    if not isinstance(node, ast.Subscript) or not isinstance(node.value, ast.Name):
+        return False
+    if node.value.id == "list":
+        if isinstance(node.slice, ast.Subscript) and (
+            isinstance(node.slice.value, ast.Name) and node.slice.value.id == "list"
+        ):
+            return False
+        return _is_supported_generic(node.slice)
+    if node.value.id == "dict" and isinstance(node.slice, ast.Tuple) and len(node.slice.elts) == 2:
+        key, value = node.slice.elts
+        return isinstance(key, ast.Name) and key.id == "str" and _is_supported_generic(value)
+    return False
+
+
+def _field_annotation(node: ast.expr) -> str:
+    annotation = _check_ann(ast.unparse(node), "instance field")
+    if annotation == "None":
+        raise ScanError("instance fields cannot use the None annotation")
+    return annotation
+
+
+def _collect_instance_fields(init: ast.FunctionDef, class_name: str) -> list[dict[str, Any]]:
+    fields = []
+    seen: set[str] = set()
+    property_names: set[str] = set()
+    for node in ast.walk(init):
+        if not isinstance(node, ast.AnnAssign):
+            continue
+        target = node.target
+        if not (
+            isinstance(target, ast.Attribute)
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "self"
+        ):
+            continue
+        if node.value is None:
+            raise ScanError(f"{class_name}.{target.attr}: instance fields must be initialized")
+        _check_name(target.attr, f"{class_name} instance field")
+        annotation = _field_annotation(node.annotation)
+        property_name = target.attr[0].upper() + target.attr[1:]
+        if target.attr in seen or property_name in property_names:
+            raise ScanError(f"{class_name}: duplicate or colliding generated field {target.attr!r}")
+        if property_name in {"Dispose", class_name}:
+            raise ScanError(f"{class_name}.{target.attr}: collides with a generated C# member")
+        seen.add(target.attr)
+        property_names.add(property_name)
+        fields.append({
+            "name": target.attr,
+            "annotation": annotation,
+            "writable": True,
+        })
+    return fields
 
 
 def _literal_default(node: ast.expr, where: str) -> Any:
@@ -187,6 +253,7 @@ def scan_module(business_py: Path) -> dict[str, Any]:
                 raise ScanError(f"{node.name}: inheritance, metaclasses, and decorators are not supported")
             init_params = []
             methods = []
+            fields = []
             init_seen = False
             for item in node.body:
                 if isinstance(item, ast.Expr) and isinstance(item.value, ast.Constant) and isinstance(item.value.value, str):
@@ -201,6 +268,7 @@ def scan_module(business_py: Path) -> dict[str, Any]:
                         raise ScanError(f"{node.name}: duplicate __init__")
                     init_seen = True
                     init_params = _check_func(item, node.name, is_init=True)["params"]
+                    fields = _collect_instance_fields(item, node.name)
                     init_names: set[str] = set()
                     for param in init_params:
                         if param["annotation"] not in BASE_TYPES:
@@ -227,6 +295,7 @@ def scan_module(business_py: Path) -> dict[str, Any]:
                 "name": node.name,
                 "init_params": init_params,
                 "methods": methods,
+                "fields": fields,
             })
             continue
         raise ScanError(

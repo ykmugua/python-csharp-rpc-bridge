@@ -104,6 +104,35 @@ def _handle(request):
         del INSTANCES[key]
         return {"id": request_id, "result": None}
 
+    if method in {"__get_member", "__set_member"}:
+        class_name = params.get("class_name")
+        member_name = params.get("member_name")
+        if not isinstance(class_name, str):
+            return _error(request_id, "InvalidRequest", "class_name must be a string")
+        if not isinstance(member_name, str):
+            return _error(request_id, "InvalidRequest", "member_name must be a string")
+        if class_name not in INTERFACE["members"]:
+            return _error(request_id, "NoSuchClass", str(class_name))
+        if member_name not in INTERFACE["members"][class_name]:
+            return _error(request_id, "NoSuchMember", str(member_name))
+        if method == "__set_member" and member_name not in INTERFACE["writable_members"].get(class_name, []):
+            return _error(request_id, "ReadOnlyMember", f"{class_name}.{member_name}")
+        instance_id = request.get("instance_id")
+        if not isinstance(instance_id, str) or not instance_id:
+            return _error(request_id, "InvalidRequest", "instance_id must be a non-empty string")
+        instance = INSTANCES.get((class_name, instance_id))
+        if instance is None:
+            return _error(request_id, "NotInitialized", f"{class_name}:{instance_id}")
+        try:
+            if method == "__get_member":
+                return {"id": request_id, "result": getattr(instance, member_name)}
+            if "value" not in params:
+                return _error(request_id, "InvalidRequest", "value is required")
+            setattr(instance, member_name, params["value"])
+            return {"id": request_id, "result": None}
+        except Exception as exc:
+            return _error(request_id, type(exc).__name__, str(exc), traceback.format_exc())
+
     try:
         if method in INTERFACE["functions"]:
             result = getattr(BUSINESS, method)(**params)

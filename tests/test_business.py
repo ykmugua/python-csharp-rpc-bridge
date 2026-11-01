@@ -1,15 +1,23 @@
 from runpy import run_path
 from pathlib import Path
+import sys
 
-sample_module = run_path(str(Path(__file__).parent.parent / "modules" / "sample.py"))
+modules_dir = Path(__file__).parent.parent / "modules"
+sys.path.insert(0, str(modules_dir))
+sample_module = run_path(str(modules_dir / "sample.py"))
 SampleTextProcessor = sample_module["TextProcessor"]
 add = sample_module["add"]
+delete_item = sample_module["delete_item"]
 fixture = run_path(str(Path(__file__).parent / "fixtures" / "business.py"))
 
 
 def test_add():
     assert add(2, 3) == 5
     assert add(-5, 5) == 0
+
+
+def test_delete_item_imported_from_another_python_file():
+    assert delete_item([10, 20, 30], 1) == [10, 30]
 
 
 def test_sample_text_processor_instances_keep_independent_state():

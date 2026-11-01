@@ -14,12 +14,15 @@
     <Reference Include="$(PyfModuleName)">
       <HintPath>$(PyfOutputDir)\$(PyfModuleName).dll</HintPath>
     </Reference>
+    <Reference Include="System.Text.Json">
+      <HintPath>$(PyfOutputDir)\System.Text.Json.dll</HintPath>
+    </Reference>
     <Content Include="$(PyfOutputDir)\*.dll"
              Exclude="$(PyfOutputDir)\$(PyfModuleName).dll;$(PyfOutputDir)\ModulePlatform.dll"
              Link="%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="$(PyfOutputDir)\*.py"
-             Link="%(Filename)%(Extension)"
+    <Content Include="$(PyfOutputDir)\**\*.py"
+             Link="%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" />
     <Content Include="$(PyfOutputDir)\$(PyfModuleName)_rpc.exe"
              Condition="Exists('$(PyfOutputDir)\$(PyfModuleName)_rpc.exe')"

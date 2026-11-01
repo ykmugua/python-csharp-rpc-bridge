@@ -1,7 +1,7 @@
 {
   "module": "sample",
   "exe_name": "sample_rpc.exe",
-  "source_hash": "11bbb46f421c82bda737d6d53d6de756a3809a4f61a884c1faf94d529aa6892b",
+  "source_hash": "6d872e91de24a625ce417c1b7bd6633612bdd5da2aee8466caa87870ccd69ac9",
   "built_at": "1970-01-01T00:00:00+00:00",
   "functions": [
     {
@@ -22,6 +22,77 @@
       ],
       "return_annotation": "int",
       "doc": "Return the sum of two integers."
+    },
+    {
+      "qualname": "delete_item",
+      "params": [
+        {
+          "name": "values",
+          "annotation": "list[int]",
+          "has_default": false,
+          "default": null
+        },
+        {
+          "name": "index",
+          "annotation": "int",
+          "has_default": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "list[int]",
+      "doc": "Delete an item through a function imported from another Python file."
+    },
+    {
+      "qualname": "echo_floats",
+      "params": [
+        {
+          "name": "values",
+          "annotation": "list[float]",
+          "has_default": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "list[float]",
+      "doc": "Return a float array unchanged."
+    },
+    {
+      "qualname": "echo_strings",
+      "params": [
+        {
+          "name": "values",
+          "annotation": "list[str]",
+          "has_default": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "list[str]",
+      "doc": "Return a string array unchanged."
+    },
+    {
+      "qualname": "echo_bools",
+      "params": [
+        {
+          "name": "values",
+          "annotation": "list[bool]",
+          "has_default": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "list[bool]",
+      "doc": "Return a boolean array unchanged."
+    },
+    {
+      "qualname": "echo_records",
+      "params": [
+        {
+          "name": "values",
+          "annotation": "list[dict[str, int]]",
+          "has_default": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "list[dict[str, int]]",
+      "doc": "Return an array of JSON objects unchanged."
     }
   ],
   "classes": [
@@ -39,6 +110,23 @@
           "annotation": "bool",
           "has_default": true,
           "default": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "lang",
+          "annotation": "str",
+          "writable": true
+        },
+        {
+          "name": "verbose",
+          "annotation": "bool",
+          "writable": true
+        },
+        {
+          "name": "calls",
+          "annotation": "int",
+          "writable": true
         }
       ],
       "methods": [

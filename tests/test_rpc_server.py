@@ -139,3 +139,197 @@ def test_generated_rpc_server_dispatches_and_isolates_class_instances(tmp_path):
     finally:
         process.terminate()
         process.wait(timeout=5)
+
+
+def test_generated_rpc_server_loads_local_import_dependencies(tmp_path):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    package_dir = source_dir / "package"
+    package_dir.mkdir()
+    business = source_dir / "business.py"
+    business.write_text(
+        "from package.helper import helper\n\n"
+        "def run(value: int) -> int:\n"
+        "    return helper(value)\n",
+        encoding="utf-8",
+    )
+    (package_dir / "__init__.py").write_text("", encoding="utf-8")
+    (package_dir / "helper.py").write_text(
+        "from .more import increment\n\n"
+        "def helper(value):\n"
+        "    return increment(value)\n",
+        encoding="utf-8",
+    )
+    (package_dir / "more.py").write_text(
+        "def increment(value):\n"
+        "    return value + 1\n",
+        encoding="utf-8",
+    )
+
+    server = gen_rpc_server(scan_module(business), business, tmp_path / "backend")
+    process = subprocess.Popen(
+        [sys.executable, str(server)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        assert _send(process, {"id": 1, "method": "run", "params": {"value": 41}})["result"] == 42
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+
+def test_sample_delete_function_calls_imported_helper_over_rpc(tmp_path):
+    business = Path("modules/sample.py")
+    server = gen_rpc_server(scan_module(business), business, tmp_path / "backend")
+    process = subprocess.Popen(
+        [sys.executable, str(server)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        response = _send(
+            process,
+            {
+                "id": 1,
+                "method": "delete_item",
+                "params": {"values": [10, 20, 30], "index": 1},
+            },
+        )
+        assert response["result"] == [10, 30]
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+
+def test_generated_rpc_server_round_trips_supported_typed_collections(tmp_path):
+    business = tmp_path / "typed_collections.py"
+    business.write_text(
+        "def echo_ints(values: list[int]) -> list[int]:\n"
+        "    return values\n\n"
+        "def echo_floats(values: list[float]) -> list[float]:\n"
+        "    return values\n\n"
+        "def echo_strings(values: list[str]) -> list[str]:\n"
+        "    return values\n\n"
+        "def echo_bools(values: list[bool]) -> list[bool]:\n"
+        "    return values\n\n"
+        "def echo_records(values: list[dict[str, int]]) -> list[dict[str, int]]:\n"
+        "    return values\n",
+        encoding="utf-8",
+    )
+    server = gen_rpc_server(scan_module(business), business, tmp_path / "backend")
+    process = subprocess.Popen(
+        [sys.executable, str(server)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    cases = [
+        ("echo_ints", [1, -2, 3], [1, -2, 3]),
+        ("echo_floats", [1.25, -2.5, 3.0], [1.25, -2.5, 3.0]),
+        ("echo_strings", ["hello", "你好", ""], ["hello", "你好", ""]),
+        ("echo_bools", [True, False, True], [True, False, True]),
+        (
+            "echo_records",
+            [{"id": 1, "score": 99}, {"id": 2, "score": -1}],
+            [{"id": 1, "score": 99}, {"id": 2, "score": -1}],
+        ),
+    ]
+    try:
+        for request_id, (method, values, expected) in enumerate(cases, start=1):
+            response = _send(
+                process,
+                {"id": request_id, "method": method, "params": {"values": values}},
+            )
+            assert response["result"] == expected
+    finally:
+        process.terminate()
+        process.wait(timeout=5)
+
+
+def test_generated_rpc_server_reads_and_writes_typed_instance_fields(tmp_path):
+    business = tmp_path / "member_case.py"
+    business.write_text(
+        "class Counter:\n"
+        "    def __init__(self, initial: int = 0) -> None:\n"
+        "        self.value: int = initial\n"
+        "        self.limit: int = 10\n",
+        encoding="utf-8",
+    )
+    server = gen_rpc_server(scan_module(business), business, tmp_path / "backend")
+    process = subprocess.Popen(
+        [sys.executable, str(server)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        assert _send(
+            process,
+            {
+                "id": 1,
+                "method": "__instance",
+                "params": {
+                    "class_name": "Counter",
+                    "instance_id": "counter-1",
+                    "init_params": {"initial": 4},
+                },
+            },
+        )["result"] is None
+        read_value = {
+            "method": "__get_member",
+            "instance_id": "counter-1",
+            "params": {"class_name": "Counter", "member_name": "value"},
+        }
+        assert _send(process, {"id": 2, **read_value})["result"] == 4
+        assert _send(
+            process,
+            {
+                "id": 3,
+                "method": "__set_member",
+                "instance_id": "counter-1",
+                "params": {"class_name": "Counter", "member_name": "limit", "value": 20},
+            },
+        )["result"] is None
+        assert _send(
+            process,
+            {
+                "id": 4,
+                "method": "__get_member",
+                "instance_id": "counter-1",
+                "params": {"class_name": "Counter", "member_name": "limit"},
+            },
+        )["result"] == 20
+        assert _send(
+            process,
+            {
+                "id": 5,
+                "method": "__set_member",
+                "instance_id": "counter-1",
+                "params": {"class_name": "Counter", "member_name": "value", "value": 9},
+            },
+        )["result"] is None
+        assert _send(
+            process,
+            {
+                "id": 6,
+                "method": "__get_member",
+                "instance_id": "counter-1",
+                "params": {"class_name": "Counter", "member_name": "value"},
+            },
+        )["result"] == 9
+        unknown = _send(
+            process,
+            {
+                "id": 7,
+                "method": "__get_member",
+                "instance_id": "counter-1",
+                "params": {"class_name": "Counter", "member_name": "__dict__"},
+            },
+        )
+        assert unknown["error"]["type"] == "NoSuchMember"
+    finally:
+        process.terminate()
+        process.wait(timeout=5)

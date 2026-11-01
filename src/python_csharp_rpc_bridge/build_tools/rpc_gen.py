@@ -4,6 +4,8 @@ import json
 import keyword
 from pathlib import Path
 
+from .dependencies import copy_local_dependencies
+
 TEMPLATE = (Path(__file__).parent / "templates" / "rpc_server.py.j2").read_text(encoding="utf-8")
 
 
@@ -15,6 +17,19 @@ def gen_rpc_server(scanned: dict, business_py: Path, out_dir: Path) -> Path:
     interface = {
         "functions": [f["name"] for f in scanned["functions"]],
         "classes": {c["name"]: [m["name"] for m in c["methods"]] for c in scanned["classes"]},
+        "members": {
+            c["name"]: {
+                field["name"]: field["annotation"]
+                for field in c["fields"]
+            }
+            for c in scanned["classes"]
+        },
+        "writable_members": {
+            c["name"]: [
+                field["name"] for field in c["fields"] if field["writable"]
+            ]
+            for c in scanned["classes"]
+        },
     }
     substitutions = {
         "__SOURCE_HASH__": scanned["source_hash"],
@@ -30,4 +45,5 @@ def gen_rpc_server(scanned: dict, business_py: Path, out_dir: Path) -> Path:
     )
     out = out_dir / f"{module}_rpc_server.py"
     out.write_text(generated, encoding="utf-8", newline="\n")
+    copy_local_dependencies(business_py, out_dir)
     return out

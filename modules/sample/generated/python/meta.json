@@ -2,7 +2,7 @@
   "module": "sample",
   "exe_name": "sample_rpc.exe",
   "source_hash": "3bdc04760c643b7a71193afeb8d05c17cc2e1f88b1fd37807e125f37cd1416a3",
-  "built_at": "2026-11-19T06:46:01+00:00",
+  "built_at": "2026-11-19T06:52:48+00:00",
   "functions": [
     {
       "qualname": "show_chart",

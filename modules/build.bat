@@ -73,10 +73,16 @@ set "PUSHED=1"
 
 set "SOURCE_DATE_EPOCH=0"
 
-rem Remove any executable packaged by a previous run before refreshing.
+rem Remove any executable packaged by a previous run from the output directory.
 echo [%BUILD_MODE%] Removing stale packaged executable...
 if exist "%OUTPUT_DIR%\%MODULE_NAME%_rpc.exe" del /Q "%OUTPUT_DIR%\%MODULE_NAME%_rpc.exe"
-if exist "%MODULE_ROOT%\generated\python\%MODULE_NAME%_rpc.exe" del /Q "%MODULE_ROOT%\generated\python\%MODULE_NAME%_rpc.exe"
+
+rem Wipe the entire generated tree so stale dependencies and facades cannot survive.
+if exist "%MODULE_ROOT%\generated" (
+    echo [%BUILD_MODE%] Cleaning generated directory...
+    rmdir /S /Q "%MODULE_ROOT%\generated"
+    if errorlevel 1 goto failed
+)
 
 rem Every mode refreshes the generated sources first.
 echo.

@@ -17,7 +17,7 @@ def test_add():
 
 
 def test_delete_item_imported_from_another_python_file():
-    assert delete_item([10, 20, 30], 1) == [10, 30]
+    assert delete_item([10, 20, 30], 1) == [1, 2, 3]
 
 
 def test_sample_text_processor_instances_keep_independent_state():

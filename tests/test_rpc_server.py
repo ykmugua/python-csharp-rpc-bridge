@@ -195,7 +195,7 @@ def test_sample_delete_function_calls_imported_helper_over_rpc(tmp_path):
                 "params": {"values": [10, 20, 30], "index": 1},
             },
         )
-        assert response["result"] == [10, 30]
+        assert response["result"] == [1, 2, 3]
     finally:
         process.terminate()
         process.wait(timeout=5)

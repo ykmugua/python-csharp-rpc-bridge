@@ -21,3 +21,11 @@
 - 保留：scanner/meta_gen 仍计算 `source_hash` 写入元数据（仅构建期指纹，不参与运行时校验）。
 - 验证：`uv run --locked python -m pytest -q` → 37 passed。
 - 环境：受限环境 uv 默认缓存锁会失败，用 `UV_CACHE_DIR=$TEMP/uv-cache-test` 绕过。
+
+## 2026-11-19（三）：generated 彻底清理 + 测试预期同步
+
+- 需求：refresh 执行时要把 generated 清干净，避免旧依赖/旧类门面残留。
+- 改动：`modules/build.bat` 生成前直接 `rmdir /S /Q "%MODULE_ROOT%\generated"` 整个删除再重建（三种模式都生效）；旧 exe 仍从 out\net48 删除。
+- 验证：塞入 OldClass.cs / shared/deletion.py 垃圾文件，清理重建后均消失；pytest 37 passed。
+- 另：用户确认 `delete_item` 硬编码返回 `[1,2,3]` 是故意的，同步更新 `tests/test_business.py` 和 `tests/test_rpc_server.py` 的断言为 `[1,2,3]`。
+- 待办：本轮 build.bat / meta.json / 两个测试文件的改动需 git commit + push（上个提交 a388c18 尚未 push，本地 ahead 1）。

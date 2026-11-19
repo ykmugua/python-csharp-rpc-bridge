@@ -1,0 +1,3 @@
+# Auto merge strategy: last-push wins (avoid conflicts)
+*.md merge=ours
+sync_meta.json merge=ours

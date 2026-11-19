@@ -10,6 +10,18 @@ namespace ModulePlatform
     public static class SampleFunctions
     {
         /// <summary>
+        /// Write state: block the RPC backend and show a chart window.
+        /// </summary>
+        public static void Show_chart_pyf(string jsonArgs) =>
+            SampleRuntime.Client.Invoke("show_chart", jsonArgs);
+
+        /// <summary>
+        /// Write state: block the RPC backend and show a chart window.
+        /// </summary>
+        public static void Show_chart_pyf(double[] values, string kind, string title) =>
+            SampleRuntime.Client.Invoke("show_chart", new JsonObject { ["values"] = JsonSerializer.SerializeToNode(values), ["kind"] = JsonValue.Create(kind), ["title"] = JsonValue.Create(title) });
+
+        /// <summary>
         /// Return the sum of two integers.
         /// </summary>
         public static int Add_pyf(string jsonArgs) =>
@@ -80,5 +92,17 @@ namespace ModulePlatform
         /// </summary>
         public static JsonObject[] Echo_records_pyf(JsonObject[] values) =>
             SampleRuntime.Client.Invoke<JsonObject[]>("echo_records", new JsonObject { ["values"] = JsonSerializer.SerializeToNode(values) });
+
+        /// <summary>
+        /// Return an array of JSON objects unchanged.
+        /// </summary>
+        public static string Echo_aaa_pyf_json(string jsonArgs) =>
+            SampleRuntime.Client.Invoke<string>("echo_aaa", jsonArgs);
+
+        /// <summary>
+        /// Return an array of JSON objects unchanged.
+        /// </summary>
+        public static string Echo_aaa_pyf(string values) =>
+            SampleRuntime.Client.Invoke<string>("echo_aaa", new JsonObject { ["values"] = JsonValue.Create(values) });
     }
 }

@@ -175,9 +175,6 @@ namespace ModulePlatform
     /// <summary>Manages the Python backend for this module.</summary>
     public static class {module}Runtime
     {{
-        /// <summary>Gets the source hash used to verify the matching Python backend.</summary>
-        public const string SourceHash = {source_hash};
-
         private static StdioRpcClient? _client;
         private static bool _started;
         private static readonly object SyncRoot = new();
@@ -204,7 +201,7 @@ namespace ModulePlatform
                 ["instance_id"] = instanceId
             }});
 
-        /// <summary>Starts the Python backend and verifies its interface.</summary>
+        /// <summary>Starts the Python backend.</summary>
         public static void Start()
         {{
             lock (SyncRoot)
@@ -222,11 +219,6 @@ namespace ModulePlatform
             try
             {{
                 client.Start();
-                var ping = client.InvokeRaw("__ping", null);
-                var got = ping?["source_hash"]?.GetValue<string>();
-                if (!String.Equals(got, SourceHash, StringComparison.Ordinal))
-                    throw new RpcException("SignatureMismatch",
-                        $"source_hash mismatch: dll={{SourceHash}} backend={{got}}");
                 _started = true;
             }}
             catch (Exception initializationError)
@@ -410,7 +402,6 @@ def gen_csharp(meta: dict, out_dir: Path) -> None:
     module = "".join(part.capitalize() for part in meta["module"].split("_"))
     runtime = RUNTIME_TEMPLATE.format(
         module=module,
-        source_hash=json.dumps(meta["source_hash"]),
         exe_name=json.dumps(meta["exe_name"]),
         server_script_name=json.dumps(f'{meta["module"]}_rpc_server.py'),
     )

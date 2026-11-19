@@ -43,7 +43,7 @@ def test_generated_rpc_and_facade_cover_the_sample(tmp_path):
 
     assert rpc_path.is_file()
     assert rpc_path.name == "sample_rpc_server.py"
-    assert "SOURCE_HASH" in rpc_path.read_text(encoding="utf-8")
+    assert "SOURCE_HASH" not in rpc_path.read_text(encoding="utf-8")
     assert "import sample as BUSINESS" in rpc_path.read_text(encoding="utf-8")
     functions = (generated_dir / "SampleFunctions.cs").read_text(encoding="utf-8")
     assert "public static class SampleFunctions" in functions
@@ -69,7 +69,7 @@ def test_generated_rpc_and_facade_cover_the_sample(tmp_path):
     assert "internal static StdioRpcClient Client" in runtime
     assert "namespace ModulePlatform" in runtime
     assert "using ModulePlatform.PyfRpc;" in runtime
-    assert f'SourceHash = {json.dumps(scanned["source_hash"])}' in runtime
+    assert "SourceHash" not in runtime
     assert 'CreateClient("sample_rpc.exe", "sample_rpc_server.py")' in runtime
     assert "public static void Start()" in runtime
     assert "public static void Stop()" in runtime

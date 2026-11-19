@@ -15,13 +15,11 @@ namespace ModulePlatform
         private TextProcessor(string instanceId) => _instanceId = instanceId;
 
         /// <summary>Creates a Python TextProcessor instance.</summary>
-        public static TextProcessor Create(string? lang = null, bool? verbose = null)
+        public static TextProcessor Create(string lang, bool verbose)
         {
             var initParams = new JsonObject();
-            if (lang is { } value_lang)
-                initParams["lang"] = JsonValue.Create(value_lang);
-            if (verbose is { } value_verbose)
-                initParams["verbose"] = JsonValue.Create(value_verbose);
+            initParams["lang"] = JsonValue.Create(lang);
+            initParams["verbose"] = JsonValue.Create(verbose);
             var instanceId = SampleRuntime.CreateInstance("TextProcessor", initParams);
             return new TextProcessor(instanceId);
         }

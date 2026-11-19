@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <PyfOutputDir Condition="'$(PyfOutputDir)' == ''">..\..\modules\sample\out\net48\release</PyfOutputDir>
+    <PyfOutputDir Condition="'$(PyfOutputDir)' == ''">..\..\modules\sample\out\net48</PyfOutputDir>
     <PyfModuleName Condition="'$(PyfModuleName)' == ''">sample</PyfModuleName>
   </PropertyGroup>
   <ItemGroup>

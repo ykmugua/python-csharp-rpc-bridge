@@ -7,7 +7,7 @@
 1. 在 `modules/` 编写 Python 模块，例如 `sample.py`。
 2. 生成器检查函数和类接口，输出 Python RPC 服务端与 C# API。
 3. .NET 构建将通用桥接库和生成的 C# API 编译成 DLL。
-4. C# Runtime 启动 Python 后端并校验源码哈希，再转发函数和类实例调用。
+4. C# Runtime 启动 Python 后端，再转发函数和类实例调用。
 
 Python 代码不会被翻译成 C#；业务逻辑仍由 Python 进程执行。
 
@@ -18,7 +18,7 @@ Python 代码不会被翻译成 C#；业务逻辑仍由 Python 进程执行。
 - Python 3.14 或更高版本
 - [uv](https://docs.astral.sh/uv/)
 - .NET SDK 8，用于构建目标为 .NET Framework 4.8 的桥接库
-- Release 后端打包需要 Nuitka 和 Zig；Debug 不需要 Zig
+- `pack` 独立打包需要 Nuitka 和 Zig；`refresh`、`compile` 不需要 Zig
 
 ### 构建示例
 
@@ -30,10 +30,13 @@ uv run --locked python -m pytest -q
 .\modules\build.bat
 ```
 
-脚本会列出 `modules/` 下的 Python 文件。选择 `sample.py` 后，再选择配置：
+脚本会列出 `modules/` 下的 Python 文件。选择 `sample.py` 后，再选择构建模式：
 
-- **Debug**：不运行 Nuitka，输出 Python 脚本后端；运行时需要 Python 解释器。默认使用 PATH 中的 `python`，也可通过 `PYF_PYTHON` 指定解释器。
-- **Release**：通过 Nuitka 生成独立后端 EXE；需要在 `toolchain/zig-*` 下放置一个 Zig 发行目录。
+- **refresh**：刷新 `generated/` 内容，把生成的 Python 文件更新到输出目录，并删除旧的打包 EXE。不重新编译 DLL，也不打包。
+- **compile**：在 `refresh` 的基础上，用 .NET Framework 4.8 重新编译模块 DLL。
+- **pack**：在 `compile` 的基础上，通过 Nuitka + Zig 生成独立后端 EXE 并放入输出目录；需要在 `toolchain/zig-*` 下放置一个 Zig 发行目录。
+
+三种模式都会刷新 `generated/`，产物统一输出到 `out/net48/`，不再区分 Release/Debug 子目录。`refresh` 产出的 Python 脚本后端运行时需要 Python 解释器；默认使用 PATH 中的 `python`，也可通过 `PYF_PYTHON` 指定解释器。
 
 详细的 Zig 放置要求见[工具链说明](./toolchain/README.md)。
 
@@ -48,9 +51,7 @@ modules/
     ├── generated/
     │   ├── python/             元数据、RPC 服务端和业务源码副本
     │   └── csharp/             生成的 Runtime、函数门面和类代理
-    └── out/net48/
-        ├── debug/              sample.dll、Python 后端及依赖
-        └── release/            sample.dll、sample_rpc.exe 及依赖
+    └── out/net48/             sample.dll、Python 后端及运行依赖
 ```
 
 DLL 和后端使用 Python 文件基名命名：`sample.py` 对应 `sample.dll`、`sample_rpc_server.py` 和 `sample_rpc.exe`。`generated/` 中的文件由工具生成，不要手工编辑。修改 Python 源码后重新构建，并部署同一次构建生成的 DLL 和后端。
@@ -96,4 +97,4 @@ doc/                          项目介绍与需求说明
 - [项目介绍](./doc/项目介绍.md)：架构、模块接入、运行时和手动构建说明。
 - [需求说明](./doc/需求说明.md)：功能范围、接口约束和验收标准。
 - [AI 生成 Python 代码规范](./doc/AI生成Python代码规范.md)：规范 AI 生成的业务模块结构、注解和限制。
-- [Zig 工具链](./toolchain/README.md)：Release 打包所需的 Zig 配置。
+- [Zig 工具链](./toolchain/README.md)：`pack` 打包所需的 Zig 配置。

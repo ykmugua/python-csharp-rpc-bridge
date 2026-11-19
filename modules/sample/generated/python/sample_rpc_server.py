@@ -4,9 +4,9 @@ import struct
 import sys
 import traceback
 
-SOURCE_HASH = "6d872e91de24a625ce417c1b7bd6633612bdd5da2aee8466caa87870ccd69ac9"
+
 MAX_FRAME = 64 * 1024 * 1024
-INTERFACE = json.loads(r'''{"functions": ["add", "delete_item", "echo_floats", "echo_strings", "echo_bools", "echo_records"], "classes": {"TextProcessor": ["normalize", "get_calls"]}, "members": {"TextProcessor": {"lang": "str", "verbose": "bool", "calls": "int"}}, "writable_members": {"TextProcessor": ["lang", "verbose", "calls"]}}''')
+INTERFACE = json.loads(r'''{"functions": ["show_chart", "add", "delete_item", "echo_floats", "echo_strings", "echo_bools", "echo_records", "echo_aaa"], "classes": {"TextProcessor": ["normalize", "get_calls"]}, "members": {"TextProcessor": {"lang": "str", "verbose": "bool", "calls": "int"}}, "writable_members": {"TextProcessor": ["lang", "verbose", "calls"]}}''')
 INSTANCES = {}
 _FRAME_OUT = sys.stdout.buffer
 
@@ -70,7 +70,7 @@ def _handle(request):
         return _error(request_id, "InvalidRequest", "params must be a JSON object")
 
     if method == "__ping":
-        return {"id": request_id, "result": {"ok": True, "source_hash": SOURCE_HASH}}
+        return {"id": request_id, "result": {"ok": True}}
     if method == "__instance":
         class_name = params.get("class_name")
         if class_name not in INTERFACE["classes"]:

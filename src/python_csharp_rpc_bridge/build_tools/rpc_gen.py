@@ -32,7 +32,7 @@ def gen_rpc_server(scanned: dict, business_py: Path, out_dir: Path) -> Path:
         },
     }
     substitutions = {
-        "__SOURCE_HASH__": scanned["source_hash"],
+
         "__INTERFACE_JSON__": json.dumps(interface, ensure_ascii=False),
         "__BUSINESS_MODULE__": module,
     }

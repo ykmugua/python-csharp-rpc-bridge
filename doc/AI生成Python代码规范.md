@@ -173,4 +173,4 @@ uv run --locked python -m pytest -q
 uv run python -m python_csharp_rpc_bridge.build_tools.build --source-file modules\my_module.py --output-root modules\my_module
 ```
 
-Debug 部署时，把 `generated\python` 下的全部文件（包括子目录）复制到后端目录，并构建对应模块 DLL。Release 独立发布还需要正确打包 Python 后端及依赖。每次修改业务源码后都要重新生成，并部署同一次构建产出的 DLL 和后端，避免源码哈希不匹配。
+使用 `modules\build.bat` 时，`refresh` 会把 `generated\python` 下的全部 `.py` 文件（包括子目录）复制到 `out\net48`，`compile` 还会重新构建模块 DLL，`pack` 再用 Nuitka + Zig 打包 Python 后端及依赖。若手动构建，需自行把生成文件复制到后端目录并编译 DLL。每次修改业务源码后都要重新生成，并部署同一次构建产出的 DLL 和后端，避免 DLL 与后端接口不一致。

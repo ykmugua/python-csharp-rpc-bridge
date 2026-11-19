@@ -9,9 +9,6 @@ namespace ModulePlatform
     /// <summary>Manages the Python backend for this module.</summary>
     public static class SampleRuntime
     {
-        /// <summary>Gets the source hash used to verify the matching Python backend.</summary>
-        public const string SourceHash = "6d872e91de24a625ce417c1b7bd6633612bdd5da2aee8466caa87870ccd69ac9";
-
         private static StdioRpcClient? _client;
         private static bool _started;
         private static readonly object SyncRoot = new();
@@ -38,7 +35,7 @@ namespace ModulePlatform
                 ["instance_id"] = instanceId
             });
 
-        /// <summary>Starts the Python backend and verifies its interface.</summary>
+        /// <summary>Starts the Python backend.</summary>
         public static void Start()
         {
             lock (SyncRoot)
@@ -56,11 +53,6 @@ namespace ModulePlatform
             try
             {
                 client.Start();
-                var ping = client.InvokeRaw("__ping", null);
-                var got = ping?["source_hash"]?.GetValue<string>();
-                if (!String.Equals(got, SourceHash, StringComparison.Ordinal))
-                    throw new RpcException("SignatureMismatch",
-                        $"source_hash mismatch: dll={SourceHash} backend={got}");
                 _started = true;
             }
             catch (Exception initializationError)

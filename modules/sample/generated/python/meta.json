@@ -1,9 +1,34 @@
 {
   "module": "sample",
   "exe_name": "sample_rpc.exe",
-  "source_hash": "6d872e91de24a625ce417c1b7bd6633612bdd5da2aee8466caa87870ccd69ac9",
-  "built_at": "1970-01-01T00:00:00+00:00",
+  "source_hash": "3bdc04760c643b7a71193afeb8d05c17cc2e1f88b1fd37807e125f37cd1416a3",
+  "built_at": "2026-11-19T06:46:01+00:00",
   "functions": [
+    {
+      "qualname": "show_chart",
+      "params": [
+        {
+          "name": "values",
+          "annotation": "list[float]",
+          "has_default": false,
+          "default": null
+        },
+        {
+          "name": "kind",
+          "annotation": "str",
+          "has_default": true,
+          "default": "line"
+        },
+        {
+          "name": "title",
+          "annotation": "str",
+          "has_default": true,
+          "default": "Chart"
+        }
+      ],
+      "return_annotation": "None",
+      "doc": "Write state: block the RPC backend and show a chart window."
+    },
     {
       "qualname": "add",
       "params": [
@@ -93,6 +118,19 @@
       ],
       "return_annotation": "list[dict[str, int]]",
       "doc": "Return an array of JSON objects unchanged."
+    },
+    {
+      "qualname": "echo_aaa",
+      "params": [
+        {
+          "name": "values",
+          "annotation": "str",
+          "has_default": false,
+          "default": null
+        }
+      ],
+      "return_annotation": "str",
+      "doc": "Return an array of JSON objects unchanged."
     }
   ],
   "classes": [
@@ -102,14 +140,14 @@
         {
           "name": "lang",
           "annotation": "str",
-          "has_default": true,
-          "default": "en"
+          "has_default": false,
+          "default": null
         },
         {
           "name": "verbose",
           "annotation": "bool",
-          "has_default": true,
-          "default": false
+          "has_default": false,
+          "default": null
         }
       ],
       "fields": [

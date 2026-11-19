@@ -4,7 +4,7 @@ import struct
 import sys
 import traceback
 
-SOURCE_HASH = "__SOURCE_HASH__"
+
 MAX_FRAME = 64 * 1024 * 1024
 INTERFACE = json.loads(r'''__INTERFACE_JSON__''')
 INSTANCES = {}
@@ -70,7 +70,7 @@ def _handle(request):
         return _error(request_id, "InvalidRequest", "params must be a JSON object")
 
     if method == "__ping":
-        return {"id": request_id, "result": {"ok": True, "source_hash": SOURCE_HASH}}
+        return {"id": request_id, "result": {"ok": True}}
     if method == "__instance":
         class_name = params.get("class_name")
         if class_name not in INTERFACE["classes"]:

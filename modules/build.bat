@@ -8,14 +8,14 @@ set "ZIG_EXE="
 set "ZIG_DIR="
 set "SOURCE_FILE="
 set "MODULE_NAME="
-set "BUILD_CONFIG="
-set "CONFIG_DIR="
 set "MODULE_ROOT="
 set "OUTPUT_DIR="
+set "BUILD_MODE="
+set "DO_COMPILE=0"
+set "DO_PACK=0"
 set "PUSHED="
 set "BUILD_EXIT_CODE="
 set /a SOURCE_COUNT=0
-set /a SOURCE_CHOICE=0
 
 echo Python files in %BAT_DIR%:
 for %%F in ("%BAT_DIR%*.py") do if exist "%%~fF" call :list_source "%%~fF"
@@ -39,60 +39,76 @@ for %%I in ("%SOURCE_FILE%") do set "MODULE_NAME=%%~nI"
 set "MODULE_ROOT=%BAT_DIR%%MODULE_NAME%"
 
 echo.
-echo Select build configuration:
-echo   1. Release - package the Python backend as an executable with Nuitka
-echo   2. Debug   - run the generated Python RPC script without Nuitka
-set /p "CONFIG_CHOICE=Select Release or Debug: "
-if "%CONFIG_CHOICE%"=="1" (
-    set "BUILD_CONFIG=Release"
-    set "CONFIG_DIR=release"
-) else if "%CONFIG_CHOICE%"=="2" (
-    set "BUILD_CONFIG=Debug"
-    set "CONFIG_DIR=debug"
-) else (
-    echo Invalid build configuration selection.
+echo Select build mode:
+echo   1 / refresh - regenerate sources, update Python files in out\net48, remove packaged exe
+echo   2 / compile - refresh + rebuild the C# DLL
+echo   3 / pack    - compile + package the Python backend with Nuitka/Zig
+set /p "MODE_CHOICE=Select mode (1/2/3 or refresh/compile/pack): "
+if /I "%MODE_CHOICE%"=="1" set "BUILD_MODE=refresh"
+if /I "%MODE_CHOICE%"=="refresh" set "BUILD_MODE=refresh"
+if /I "%MODE_CHOICE%"=="2" set "BUILD_MODE=compile"
+if /I "%MODE_CHOICE%"=="compile" set "BUILD_MODE=compile"
+if /I "%MODE_CHOICE%"=="3" set "BUILD_MODE=pack"
+if /I "%MODE_CHOICE%"=="pack" set "BUILD_MODE=pack"
+if not defined BUILD_MODE (
+    echo Invalid build mode selection.
     set "BUILD_EXIT_CODE=1"
     goto failed
+)
+if /I "%BUILD_MODE%"=="compile" set "DO_COMPILE=1"
+if /I "%BUILD_MODE%"=="pack" (
+    set "DO_COMPILE=1"
+    set "DO_PACK=1"
 )
 
 if not exist "%MODULE_ROOT%" mkdir "%MODULE_ROOT%"
 if errorlevel 1 goto failed
-set "OUTPUT_DIR=%MODULE_ROOT%\out\net48\%CONFIG_DIR%"
+set "OUTPUT_DIR=%MODULE_ROOT%\out\net48"
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 if errorlevel 1 goto failed
-
-if /I "%BUILD_CONFIG%"=="Release" (
-    call :configure_zig
-    if errorlevel 1 goto failed
-)
 
 pushd "%PROJECT_ROOT%"
 if errorlevel 1 goto failed
 set "PUSHED=1"
 
 set "SOURCE_DATE_EPOCH=0"
+
+rem Remove any executable packaged by a previous run before refreshing.
+echo [%BUILD_MODE%] Removing stale packaged executable...
+if exist "%OUTPUT_DIR%\%MODULE_NAME%_rpc.exe" del /Q "%OUTPUT_DIR%\%MODULE_NAME%_rpc.exe"
+if exist "%MODULE_ROOT%\generated\python\%MODULE_NAME%_rpc.exe" del /Q "%MODULE_ROOT%\generated\python\%MODULE_NAME%_rpc.exe"
+
+rem Every mode refreshes the generated sources first.
 echo.
-echo Generating Python and C# sources for %MODULE_NAME%...
-if /I "%BUILD_CONFIG%"=="Release" (
+echo [%BUILD_MODE%] Refreshing generated sources for %MODULE_NAME%...
+if "%DO_PACK%"=="1" (
+    call :configure_zig
+    if errorlevel 1 goto failed
     uv run --with nuitka python -m python_csharp_rpc_bridge.build_tools.build --source-file "%SOURCE_FILE%" --output-root "%MODULE_ROOT%" --nuitka --nuitka-zig
 ) else (
     uv run python -m python_csharp_rpc_bridge.build_tools.build --source-file "%SOURCE_FILE%" --output-root "%MODULE_ROOT%"
 )
 if errorlevel 1 goto failed
 
-echo Building .NET Framework 4.8 DLL: %MODULE_NAME%.dll
-dotnet build src\csharp\ModulePlatform.csproj -c %BUILD_CONFIG% -o "%OUTPUT_DIR%" -p:PyfModuleName="%MODULE_NAME%" -p:PyfGeneratedDir="%MODULE_ROOT%\generated\csharp" -p:PyfBackendDir="%OUTPUT_DIR%"
-if errorlevel 1 goto failed
-
+rem Copy the freshly generated Python sources into the output folder.
+echo [%BUILD_MODE%] Updating Python source files in %OUTPUT_DIR%...
 xcopy /Y /I /S "%MODULE_ROOT%\generated\python\*.py" "%OUTPUT_DIR%\" >nul
 if errorlevel 1 goto failed
-if /I "%BUILD_CONFIG%"=="Release" (
+
+if "%DO_COMPILE%"=="1" (
+    echo [%BUILD_MODE%] Building .NET Framework 4.8 DLL: %MODULE_NAME%.dll
+    dotnet build src\csharp\ModulePlatform.csproj -c Release -o "%OUTPUT_DIR%" -p:PyfModuleName="%MODULE_NAME%" -p:PyfGeneratedDir="%MODULE_ROOT%\generated\csharp" -p:PyfBackendDir="%OUTPUT_DIR%"
+    if errorlevel 1 goto failed
+)
+
+if "%DO_PACK%"=="1" (
+    echo [%BUILD_MODE%] Copying Zig/Nuitka packaged executable to %OUTPUT_DIR%...
     copy /Y "%MODULE_ROOT%\generated\python\%MODULE_NAME%_rpc.exe" "%OUTPUT_DIR%\" >nul
     if errorlevel 1 goto failed
 )
 
 echo.
-echo Build completed successfully.
+echo Build completed successfully (%BUILD_MODE%).
 echo Generated sources: %MODULE_ROOT%\generated\
 echo Build output:      %OUTPUT_DIR%\
 if defined PUSHED popd

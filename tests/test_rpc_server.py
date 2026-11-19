@@ -32,10 +32,7 @@ def test_generated_rpc_server_dispatches_and_isolates_class_instances(tmp_path):
     )
     try:
         ping = _send(process, {"id": 1, "method": "__ping", "params": {}})
-        assert ping["result"] == {
-            "ok": True,
-            "source_hash": scan_module(business)["source_hash"],
-        }
+        assert ping["result"] == {"ok": True}
         assert _send(process, {"id": 3, "method": "add", "params": {"a": 2, "b": 3}})["result"] == 5
         assert _send(
             process,
